@@ -51,7 +51,7 @@ jobs:
         run: |
           aws s3 sync --acl public-read --delete $HOME/src/ljt.nightly/latest/files/ s3://libjpeg-turbo-pr/${{env.BRANCH}}/${{github.job}}/
   macos:
-    runs-on: macos-11
+    runs-on: macos-12
     steps:
       - name: Set global environment variables
         run: |
@@ -61,7 +61,7 @@ jobs:
       - name: Set up build
         run: |
           brew install yasm md5sha1sum
-          sudo xcode-select -s /Applications/Xcode_12.4.app
+          sudo xcode-select -s /Applications/Xcode_13.2.1.app
           mkdir -p $HOME/src/ljt.nightly
           git clone --depth=1 https://github.com/libjpeg-turbo/buildscripts.git -b $BRANCH $HOME/src/buildscripts
       - name: Configure GPG signing
@@ -167,6 +167,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up build
         run: |
+          sudo apt install -y nasm
           sudo sysctl vm.mmap_rnd_bits=28
       - name: Build
         env:
@@ -174,7 +175,7 @@ jobs:
         run: |
           mkdir build
           pushd build
-          cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS_RELWITHDEBINFO="-O0 -g -fsanitize=memory -fno-sanitize-recover=all -fPIE" -DWITH_SIMD=0 ..
+          cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_C_COMPILER=clang -DCMAKE_C_FLAGS_RELWITHDEBINFO="-O0 -g -fsanitize=memory -fsanitize-memory-param-retval -fno-sanitize-recover=all -fPIE -DZERO_BUFFERS=1" -DREQUIRE_SIMD=1 ..
           export NUMCPUS=`grep -c '^processor' /proc/cpuinfo`
           make -j$NUMCPUS --load-average=$NUMCPUS
           make test

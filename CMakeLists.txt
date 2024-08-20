@@ -5,7 +5,7 @@ if(CMAKE_EXECUTABLE_SUFFIX)
 endif()
 
 project(libjpeg-turbo C)
-set(VERSION 3.0.3)
+set(VERSION 3.0.4)
 set(COPYRIGHT_YEAR "1991-2024")
 string(REPLACE "." ";" VERSION_TRIPLET ${VERSION})
 list(GET VERSION_TRIPLET 0 VERSION_MAJOR)
@@ -309,12 +309,12 @@ endif()
 # 1: + In-memory source/destination managers (libjpeg-turbo 1.3.x)
 # 2: + Partial image decompression functions (libjpeg-turbo 1.5.x)
 # 3: + ICC functions (libjpeg-turbo 2.0.x)
-# 4: + 12-bit-per-component and lossless functions (libjpeg-turbo 2.2.x)
+# 4: + 12-bit-per-sample and lossless functions (libjpeg-turbo 2.2.x)
 #
 # libjpeg v8 API/ABI emulation:
 # 1: + Partial image decompression functions (libjpeg-turbo 1.5.x)
 # 2: + ICC functions (libjpeg-turbo 2.0.x)
-# 3: + 12-bit-per-component and lossless functions (libjpeg-turbo 2.2.x)
+# 3: + 12-bit-per-sample and lossless functions (libjpeg-turbo 2.2.x)
 set(SO_AGE 3)
 if(NOT WITH_JPEG8)
   set(SO_AGE 4)
@@ -1259,7 +1259,7 @@ foreach(libtype ${TEST_LIBTYPES})
       set(MD5_JPEG_CROP cdb35ff4b4519392690ea040c56ea99c)
 
       set(MD5_JPEG_EXAMPLE_COMPRESS 5e502da0c3c0f957a58c536f31e973dc)
-      set(MD5_PPM_EXAMPLE_DECOMPRESS 2ff0e8505ee6e0ffaeb24037d5650b57)
+      set(MD5_PPM_EXAMPLE_DECOMPRESS 70194fdcb73370ee7ba0db868d0c6fc8)
     else()
       set(cjpeg cjpeg)
       set(djpeg djpeg)
@@ -1343,7 +1343,7 @@ foreach(libtype ${TEST_LIBTYPES})
       set(MD5_JPEG_CROP b4197f377e621c4e9b1d20471432610d)
 
       set(MD5_JPEG_EXAMPLE_COMPRESS 95d4d72e2ef127332654c2599afb47bf)
-      set(MD5_PPM_EXAMPLE_DECOMPRESS 6fdde7301575bfd711e295b969b6b3de)
+      set(MD5_PPM_EXAMPLE_DECOMPRESS dea1d7bbc37e39adf628342c86096641)
     endif()
 
     # CC: null  SAMP: fullsize  FDCT: islow  ENT: huff
@@ -1673,9 +1673,7 @@ foreach(libtype ${TEST_LIBTYPES})
 
     add_test(NAME example-${sample_bits}bit-${libtype}-decompress
       COMMAND example${suffix} decompress ${EXAMPLE_12BIT_ARG}
-        ${testout}-example.jpg ${testout}-example.ppm)
-    set_tests_properties(example-${sample_bits}bit-${libtype}-decompress
-      PROPERTIES DEPENDS example-${sample_bits}bit-${libtype}-compress)
+        ${TESTIMAGES}/${TESTORIG} ${testout}-example.ppm)
     add_test(NAME example-${sample_bits}bit-${libtype}-decompress-cmp
       COMMAND md5cmp ${MD5_PPM_EXAMPLE_DECOMPRESS} ${testout}-example.ppm)
     set_tests_properties(example-${sample_bits}bit-${libtype}-decompress-cmp
@@ -1727,21 +1725,21 @@ if(WITH_TURBOJPEG)
   if(ENABLE_SHARED)
     install(TARGETS turbojpeg EXPORT ${CMAKE_PROJECT_NAME}Targets
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib
+      LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT bin)
     install(TARGETS tjbench
-      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+      RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT bin)
     if(NOT CMAKE_VERSION VERSION_LESS "3.1" AND MSVC AND
       CMAKE_C_LINKER_SUPPORTS_PDB)
       install(FILES "$<TARGET_PDB_FILE:turbojpeg>"
-        DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
+        DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT bin OPTIONAL)
     endif()
   endif()
   if(ENABLE_STATIC)
     install(TARGETS turbojpeg-static EXPORT ${CMAKE_PROJECT_NAME}Targets
       INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+      ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib)
     if(NOT ENABLE_SHARED)
       if(GENERATOR_IS_MULTI_CONFIG)
         set(DIR "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}")
@@ -1749,17 +1747,17 @@ if(WITH_TURBOJPEG)
         set(DIR ${CMAKE_CURRENT_BINARY_DIR})
       endif()
       install(PROGRAMS ${DIR}/tjbench-static${EXE}
-        DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME tjbench${EXE})
+        DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT bin RENAME tjbench${EXE})
     endif()
   endif()
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/turbojpeg.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT include)
 endif()
 
 if(ENABLE_STATIC)
   install(TARGETS jpeg-static EXPORT ${CMAKE_PROJECT_NAME}Targets
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib)
   if(NOT ENABLE_SHARED)
     if(GENERATOR_IS_MULTI_CONFIG)
       set(DIR "${CMAKE_CURRENT_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}")
@@ -1767,15 +1765,16 @@ if(ENABLE_STATIC)
       set(DIR ${CMAKE_CURRENT_BINARY_DIR})
     endif()
     install(PROGRAMS ${DIR}/cjpeg-static${EXE}
-      DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME cjpeg${EXE})
+      DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT bin RENAME cjpeg${EXE})
     install(PROGRAMS ${DIR}/djpeg-static${EXE}
-      DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME djpeg${EXE})
+      DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT bin RENAME djpeg${EXE})
     install(PROGRAMS ${DIR}/jpegtran-static${EXE}
-      DESTINATION ${CMAKE_INSTALL_BINDIR} RENAME jpegtran${EXE})
+      DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT bin RENAME jpegtran${EXE})
   endif()
 endif()
 
-install(TARGETS rdjpgcom wrjpgcom RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS rdjpgcom wrjpgcom
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT bin)
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.ijg
   ${CMAKE_CURRENT_SOURCE_DIR}/README.md ${CMAKE_CURRENT_SOURCE_DIR}/example.c
@@ -1783,10 +1782,11 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/README.ijg
   ${CMAKE_CURRENT_SOURCE_DIR}/libjpeg.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/structure.txt
   ${CMAKE_CURRENT_SOURCE_DIR}/usage.txt ${CMAKE_CURRENT_SOURCE_DIR}/wizard.txt
-  ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.md DESTINATION ${CMAKE_INSTALL_DOCDIR})
+  ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.md DESTINATION ${CMAKE_INSTALL_DOCDIR}
+  COMPONENT doc)
 if(WITH_JAVA)
   install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/java/TJExample.java
-    DESTINATION ${CMAKE_INSTALL_DOCDIR})
+    DESTINATION ${CMAKE_INSTALL_DOCDIR} COMPONENT doc)
 endif()
 
 if(UNIX OR MINGW)
@@ -1794,26 +1794,28 @@ if(UNIX OR MINGW)
     ${CMAKE_CURRENT_SOURCE_DIR}/djpeg.1 ${CMAKE_CURRENT_SOURCE_DIR}/jpegtran.1
     ${CMAKE_CURRENT_SOURCE_DIR}/rdjpgcom.1
     ${CMAKE_CURRENT_SOURCE_DIR}/wrjpgcom.1
-    DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+    DESTINATION ${CMAKE_INSTALL_MANDIR}/man1 COMPONENT man)
 endif()
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pkgscripts/libjpeg.pc
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig COMPONENT lib)
 if(WITH_TURBOJPEG)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/pkgscripts/libturbojpeg.pc
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig COMPONENT lib)
 endif()
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/pkgscripts/${CMAKE_PROJECT_NAME}Config.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/pkgscripts/${CMAKE_PROJECT_NAME}ConfigVersion.cmake
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME})
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}
+  COMPONENT lib)
 install(EXPORT ${CMAKE_PROJECT_NAME}Targets
   NAMESPACE ${CMAKE_PROJECT_NAME}::
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME})
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}
+  COMPONENT lib)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/jconfig.h
   ${CMAKE_CURRENT_SOURCE_DIR}/jerror.h ${CMAKE_CURRENT_SOURCE_DIR}/jmorecfg.h
   ${CMAKE_CURRENT_SOURCE_DIR}/jpeglib.h
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT include)
 
 include(cmakescripts/BuildPackages.cmake)
 
